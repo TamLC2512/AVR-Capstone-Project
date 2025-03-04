@@ -1,0 +1,12 @@
+VERSION:3 SOURCE_TIMESTAMP:5A2453C0
+NODE:I LEVEL:0 LINE:1 "D:\_software_installed\cvavr\inc\mega328p.h"
+NODE:I LEVEL:0 LINE:2 "D:\_software_installed\cvavr\inc\io.h"
+NODE:I LEVEL:0 LINE:3 "D:\_software_installed\cvavr\inc\delay.h"
+NODE:M LEVEL:0 LINE:5 "SLAVE_ADDRESS"
+NODE:V LEVEL:0 LINE:6 "received_data -> R3,R4"
+NODE:F LEVEL:0 LINE:8 "I2C_INIT_SLAVE(void)"
+NODE:F LEVEL:0 LINE:14 "I2C_WAIT(void)"
+NODE:F LEVEL:0 LINE:18 "I2C_RECEIVE(void)"
+NODE:F LEVEL:0 LINE:21 "I2C_ACKNOWLEDGE(void)"
+NODE:F LEVEL:0 LINE:24 "I2C_RESET(void)"
+NODE:F LEVEL:0 LINE:27 "main(void)"

@@ -1,0 +1,13 @@
+VERSION:3 SOURCE_TIMESTAMP:5A286CF6
+NODE:I LEVEL:0 LINE:1 "D:\_software_installed\cvavr\inc\mega328p.h"
+NODE:I LEVEL:0 LINE:2 "D:\_software_installed\cvavr\inc\delay.h"
+NODE:I LEVEL:0 LINE:3 "D:\_software_installed\cvavr\inc\alcd.h"
+NODE:I LEVEL:0 LINE:4 "D:\_software_installed\cvavr\inc\stdint.h"
+NODE:M LEVEL:0 LINE:6 "ADC_VREF_TYPE"
+NODE:V LEVEL:0 LINE:11 "ADC0 -> R3,R4"
+NODE:V LEVEL:0 LINE:12 "Temp -> RAM:????"
+NODE:F LEVEL:0 LINE:15 "read_adc(unsigned char adc_input)"
+NODE:F LEVEL:0 LINE:25 "main(void)"
+NODE:F LEVEL:0 LINE:53 "map(uint16_t input,uint16_t in_min,uint16_t in_max,uint16_t out_min,uint16_t out_max)"
+NODE:F LEVEL:0 LINE:58 "Analog_to_Temp(unsigned int val)"
+NODE:F LEVEL:0 LINE:96 "Display_Value(unsigned int number)"

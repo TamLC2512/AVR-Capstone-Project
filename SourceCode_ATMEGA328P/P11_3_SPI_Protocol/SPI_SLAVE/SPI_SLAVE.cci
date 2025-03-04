@@ -1,0 +1,11 @@
+VERSION:3 SOURCE_TIMESTAMP:5A2554FC
+NODE:I LEVEL:0 LINE:1 "D:\_software_installed\cvavr\inc\mega328p.h"
+NODE:I LEVEL:0 LINE:2 "D:\_software_installed\cvavr\inc\alcd.h"
+NODE:M LEVEL:0 LINE:4 "MOSI"
+NODE:M LEVEL:0 LINE:5 "MISO"
+NODE:M LEVEL:0 LINE:6 "SCK"
+NODE:M LEVEL:0 LINE:7 "SS"
+NODE:V LEVEL:0 LINE:9 "count -> R3,R4"
+NODE:F LEVEL:0 LINE:11 "SPI_Slave_Init(void)"
+NODE:F LEVEL:0 LINE:19 "SPI_Slave_Receive(void)"
+NODE:F LEVEL:0 LINE:24 "main(void)"

@@ -1,0 +1,51 @@
+RAM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+pulseCount                                                                        0x0300       4
+Kp                                                                                0x0304       4
+Ki                                                                                0x0308       4
+Kd                                                                                0x030C       4
+input                                                                             0x0310       4
+error                                                                             0x0314       4
+output                                                                            0x0318       4
+setpoint                                                                          0x031C       4
+maxOutput                                                                         0x0320       4
+minOutput                                                                         0x0324       4
+lastError                                                                         0x0328       4
+pPart                                                                             0x032C       4
+iPart                                                                             0x0330       4
+dPart                                                                             0x0334       4
+lastPulseCount                                                                    0x0338       4
+counter                                                                           0x033C       4
+counter                                                                           0x0340       4
+_base_y                                                                           0x0344       4
+
+EEPROM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                                          Register  Size
+------------------------------------------------------------------------------------------------
+input_LCD                                                                         R3,R4        2
+err_LCD                                                                           R5,R6        2
+_lcd_x                                                                            R8           1
+_lcd_y                                                                            R7           1
+_lcd_maxx                                                                         R10          1
+
+FLASH Allocation [words]
+Function                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+read_adc                                                                          0x00085     27
+main                                                                              0x000A0     92
+UART_Init                                                                         0x000FC     13
+UART_putchar                                                                      0x00109     10
+data_write                                                                        0x00113     27
+PID_Calculate                                                                     0x0012E    289
+pwmPulse                                                                          0x0024F      6
+ext_int0_isr                                                                      0x00255     23
+timer2_ovf_isr                                                                    0x0028D     84
+_lcd_write_nibble_G100                                                            0x002E1     37
+_lcd_write_data                                                                   0x00306     13
+lcd_clear                                                                         0x00313     12
+lcd_init                                                                          0x0031F     47

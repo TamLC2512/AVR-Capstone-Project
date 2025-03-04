@@ -1,0 +1,21 @@
+RAM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+receivedData                                                                      0x0300       1
+
+EEPROM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                                          Register  Size
+------------------------------------------------------------------------------------------------
+
+FLASH Allocation [words]
+Function                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+UART_Init                                                                         0x00051     15
+SPI_MASTER_Init                                                                   0x00060      9
+SPI_MASTER_Transmit                                                               0x00069      8
+main                                                                              0x00071     11
+USART_RX_Complete                                                                 0x0007C     36

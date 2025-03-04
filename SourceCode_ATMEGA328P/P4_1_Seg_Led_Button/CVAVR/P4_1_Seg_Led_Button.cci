@@ -1,0 +1,10 @@
+VERSION:3 SOURCE_TIMESTAMP:5A23BAD3
+NODE:I LEVEL:0 LINE:1 "D:\_software_installed\cvavr\inc\mega328p.h"
+NODE:I LEVEL:0 LINE:2 "D:\_software_installed\cvavr\inc\delay.h"
+NODE:V LEVEL:0 LINE:4 "Led_7Seg -> RAM:????"
+NODE:V LEVEL:0 LINE:17 "current_button_1 -> R4"
+NODE:V LEVEL:0 LINE:17 "previous_button_1 -> R3"
+NODE:V LEVEL:0 LINE:18 "current_button_2 -> R6"
+NODE:V LEVEL:0 LINE:18 "previous_button_2 -> R5"
+NODE:V LEVEL:0 LINE:19 "counter -> R8"
+NODE:F LEVEL:0 LINE:21 "main(void)"

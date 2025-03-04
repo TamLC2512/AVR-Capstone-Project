@@ -1,0 +1,601 @@
+;#include <mega328p.h>
+;PCODE: $00000000 VOL: 0
+	#ifndef __SLEEP_DEFINED__
+;PCODE: $00000001 VOL: 0
+	#define __SLEEP_DEFINED__
+;PCODE: $00000002 VOL: 0
+	.EQU __se_bit=0x01
+;PCODE: $00000003 VOL: 0
+	.EQU __sm_mask=0x0E
+;PCODE: $00000004 VOL: 0
+	.EQU __sm_adc_noise_red=0x02
+;PCODE: $00000005 VOL: 0
+	.EQU __sm_powerdown=0x04
+;PCODE: $00000006 VOL: 0
+	.EQU __sm_powersave=0x06
+;PCODE: $00000007 VOL: 0
+	.EQU __sm_standby=0x0C
+;PCODE: $00000008 VOL: 0
+	.EQU __sm_ext_standby=0x0E
+;PCODE: $00000009 VOL: 0
+	.SET power_ctrl_reg=smcr
+;PCODE: $0000000A VOL: 0
+	#endif
+;PCODE: $0000000B VOL: 0
+;PCODE: $0000000C VOL: 0
+;#include <delay.h>
+;#include <alcd.h>
+;#include <stdio.h>
+;#include <stdint.h>
+;
+;#define TCNT1  0xC1
+;#define PWM_R  6     //PD6 (OC0A)
+;#define PWM_L  5     //PD5 (OC0B)
+;
+;#define pulsesPerRevolution 2000 //encoder co 2000 rang
+;#define sampleTime 0.01          //thoi gian lay mau
+;
+;// Voltage Reference: AREF pin
+;#define ADC_VREF_TYPE ((0<<REFS1)|(0<<REFS0)|(0<<ADLAR))
+;
+;void PID_Calculate();
+;void pwmPulse(int pwm);
+;//void Display_Value(unsigned int number);
+;void UART_putchar(char data);
+;void UART_Init();
+;void data_write( char* data, unsigned int size );
+;
+;//char error[3], deSp[5], currSp[5];
+;volatile long pulseCount = 0;    //bien dem xung
+;
+;float Kp = 0.2;
+
+	.DSEG
+;float Ki = 0.35;
+;float Kd = 0.0001;
+;float input, error, output, setpoint;
+;
+;float maxOutput = 255;
+;float minOutput = 0;
+;
+;int input_LCD, err_LCD;
+;
+;// Read the AD conversion result
+;unsigned int read_adc(unsigned char adc_input)
+; 0000 0027 {
+
+	.CSEG
+;PCODE: $0000000D VOL: 0
+;PCODE: $0000000E VOL: 0
+; 0000 0028 ADMUX=adc_input | ADC_VREF_TYPE;
+;PCODE: $0000000F VOL: 0
+;	adc_input -> Y+0
+;PCODE: $00000010 VOL: 0
+;PCODE: $00000011 VOL: 0
+;PCODE: $00000012 VOL: 0
+; 0000 0029 delay_us(10);
+;PCODE: $00000013 VOL: 0
+; 0000 002A // Start the AD conversion
+; 0000 002B ADCSRA|=(1<<ADSC);
+;PCODE: $00000014 VOL: 0
+;PCODE: $00000015 VOL: 0
+;PCODE: $00000016 VOL: 0
+; 0000 002C // Wait for the AD conversion to complete
+; 0000 002D while ((ADCSRA & (1<<ADIF))==0);
+;PCODE: $00000017 VOL: 0
+;PCODE: $00000018 VOL: 0
+;PCODE: $00000019 VOL: 0
+;PCODE: $0000001A VOL: 0
+;PCODE: $0000001B VOL: 0
+;PCODE: $0000001C VOL: 0
+; 0000 002E ADCSRA|=(1<<ADIF);
+;PCODE: $0000001D VOL: 0
+;PCODE: $0000001E VOL: 0
+;PCODE: $0000001F VOL: 0
+; 0000 002F return ADCW;
+;PCODE: $00000020 VOL: 0
+;PCODE: $00000021 VOL: 0
+;PCODE: $00000022 VOL: 0
+; 0000 0030 }
+;PCODE: $00000023 VOL: 0
+;void main(void)
+; 0000 0032 {
+;PCODE: $00000024 VOL: 0
+; 0000 0033 #pragma optsize-
+; 0000 0034 CLKPR=(1<<CLKPCE);
+;PCODE: $00000025 VOL: 0
+;PCODE: $00000026 VOL: 0
+; 0000 0035 CLKPR=0x00;
+;PCODE: $00000027 VOL: 0
+;PCODE: $00000028 VOL: 0
+; 0000 0036 #ifdef _OPTIMIZE_SIZE_
+; 0000 0037 #pragma optsize+
+; 0000 0038 #endif
+; 0000 0039 
+; 0000 003A // INT0 Mode: Rising Edge
+; 0000 003B EICRA=(0<<ISC11)|(0<<ISC10)|(1<<ISC01)|(1<<ISC00);
+;PCODE: $00000029 VOL: 0
+;PCODE: $0000002A VOL: 0
+; 0000 003C EIMSK=(0<<INT1) | (1<<INT0);
+;PCODE: $0000002B VOL: 0
+;PCODE: $0000002C VOL: 0
+; 0000 003D EIFR=(0<<INTF1) | (1<<INTF0);
+;PCODE: $0000002D VOL: 0
+;PCODE: $0000002E VOL: 0
+; 0000 003E PCICR=(0<<PCIE2) | (0<<PCIE1) | (0<<PCIE0);
+;PCODE: $0000002F VOL: 0
+;PCODE: $00000030 VOL: 0
+; 0000 003F 
+; 0000 0040 //cau hinh chan doc Phase A, B la chan nhan;
+; 0000 0041 //co dien tro keo len
+; 0000 0042 //Phase A:INT0, Phase B:INT1
+; 0000 0043 DDRD = (0<<DDD2) | (0<<DDD3);
+;PCODE: $00000031 VOL: 0
+;PCODE: $00000032 VOL: 0
+; 0000 0044 PORTD = (1<<PORTD2) | (1<<PORTD3);
+;PCODE: $00000033 VOL: 0
+;PCODE: $00000034 VOL: 0
+; 0000 0045 
+; 0000 0046 //chan xuat PWM, chan PD6, PD5
+; 0000 0047 DDRD.6 = 1;
+;PCODE: $00000035 VOL: 0
+;PCODE: $00000036 VOL: 0
+; 0000 0048 DDRD.5 = 1;
+;PCODE: $00000037 VOL: 0
+;PCODE: $00000038 VOL: 0
+; 0000 0049 //chan xac dinh chieu quay
+; 0000 004A DDRD.7 = 1;
+;PCODE: $00000039 VOL: 0
+;PCODE: $0000003A VOL: 0
+; 0000 004B DDRB.0 = 1;
+;PCODE: $0000003B VOL: 0
+;PCODE: $0000003C VOL: 0
+; 0000 004C PORTD.7 = 1;
+;PCODE: $0000003D VOL: 0
+;PCODE: $0000003E VOL: 0
+; 0000 004D PORTB.0 = 1;
+;PCODE: $0000003F VOL: 0
+;PCODE: $00000040 VOL: 0
+; 0000 004E 
+; 0000 004F // Timer/Counter 0 initialization
+; 0000 0050 // Clock value: 31.250 kHz
+; 0000 0051 // Fast PWM, Prescaler: 256
+; 0000 0052 TCCR0A=(1<<COM0A1)|(1<<WGM01)|(1<<WGM00);
+;PCODE: $00000041 VOL: 0
+;PCODE: $00000042 VOL: 0
+; 0000 0053 TCCR0B=(0<<WGM02)|(0<<CS02)|(1<<CS01)|(0<<CS00);
+;PCODE: $00000043 VOL: 0
+;PCODE: $00000044 VOL: 0
+; 0000 0054 TCNT0=0xC2;
+;PCODE: $00000045 VOL: 0
+;PCODE: $00000046 VOL: 0
+; 0000 0055 OCR0A=0x00;
+;PCODE: $00000047 VOL: 0
+;PCODE: $00000048 VOL: 0
+; 0000 0056 OCR0B=0x00;
+;PCODE: $00000049 VOL: 0
+;PCODE: $0000004A VOL: 0
+; 0000 0057 
+; 0000 0058 // Timer/Counter 1 initialization
+; 0000 0059 // Normal mode, Prescaler: 8
+; 0000 005A TCCR1A=(0<<WGM11)|(0<<WGM10);
+;PCODE: $0000004B VOL: 0
+;PCODE: $0000004C VOL: 0
+; 0000 005B TCCR1B=(0<<WGM13)|(0<<WGM12)|(0<<CS12)|(0<<CS11)|(1<<CS10);
+;PCODE: $0000004D VOL: 0
+;PCODE: $0000004E VOL: 0
+; 0000 005C //gia tri ban dau cua TCNT1 = 45535
+; 0000 005D TCNT1H = 0xC1;
+;PCODE: $0000004F VOL: 0
+;PCODE: $00000050 VOL: 0
+; 0000 005E TCNT1L = 0x80;
+;PCODE: $00000051 VOL: 0
+;PCODE: $00000052 VOL: 0
+; 0000 005F 
+; 0000 0060 // Timer/Counter 2 initialization
+; 0000 0061 // Normal mode, Prescaler:1024, tao delay 25ms
+; 0000 0062 ASSR=(0<<EXCLK) | (0<<AS2);
+;PCODE: $00000053 VOL: 0
+;PCODE: $00000054 VOL: 0
+; 0000 0063 TCCR2A=0x00;
+;PCODE: $00000055 VOL: 0
+;PCODE: $00000056 VOL: 0
+; 0000 0064 TCCR2B=(0<<WGM22)|(1<<CS22)|(0<<CS21)|(0<<CS20);
+;PCODE: $00000057 VOL: 0
+;PCODE: $00000058 VOL: 0
+; 0000 0065 TCNT2=0x06;
+;PCODE: $00000059 VOL: 0
+;PCODE: $0000005A VOL: 0
+; 0000 0066 
+; 0000 0067 // Timer/Counter 0 Interrupt(s) initialization
+; 0000 0068 TIMSK0=(0<<OCIE0B) | (0<<OCIE0A) | (0<<TOIE0);
+;PCODE: $0000005B VOL: 0
+;PCODE: $0000005C VOL: 0
+; 0000 0069 // Timer/Counter 1 Interrupt(s) initialization
+; 0000 006A TIMSK1=(0<<ICIE1)|(0<<OCIE1B)|(0<<OCIE1A)|(1<<TOIE1);
+;PCODE: $0000005D VOL: 0
+;PCODE: $0000005E VOL: 0
+; 0000 006B // Timer/Counter 2 Interrupt(s) initialization
+; 0000 006C TIMSK2=(0<<OCIE2B) | (0<<OCIE2A) | (1<<TOIE2);
+;PCODE: $0000005F VOL: 0
+;PCODE: $00000060 VOL: 0
+; 0000 006D 
+; 0000 006E // ADC initialization
+; 0000 006F // ADC Voltage Reference: AREF pin
+; 0000 0070 ADMUX=ADC_VREF_TYPE;
+;PCODE: $00000061 VOL: 0
+;PCODE: $00000062 VOL: 0
+; 0000 0071 ADCSRA=(1<<ADEN)|(1<<ADATE)
+; 0000 0072 |(0<<ADPS2)|(1<<ADPS1)|(1<<ADPS0);
+;PCODE: $00000063 VOL: 0
+;PCODE: $00000064 VOL: 0
+; 0000 0073 ADCSRB=(0<<ADTS2)|(0<<ADTS1)|(0<<ADTS0);
+;PCODE: $00000065 VOL: 0
+;PCODE: $00000066 VOL: 0
+; 0000 0074 
+; 0000 0075 lcd_init(16);
+;PCODE: $00000067 VOL: 0
+;PCODE: $00000068 VOL: 0
+; 0000 0076 DDRB.4 = 1;
+;PCODE: $00000069 VOL: 0
+;PCODE: $0000006A VOL: 0
+; 0000 0077 PORTB.4 = 0;
+;PCODE: $0000006B VOL: 0
+;PCODE: $0000006C VOL: 0
+; 0000 0078 
+; 0000 0079 DDRD.1 = 1;
+;PCODE: $0000006D VOL: 0
+;PCODE: $0000006E VOL: 0
+; 0000 007A UART_Init();
+;PCODE: $0000006F VOL: 0
+; 0000 007B #asm("sei")
+;PCODE: $00000070 VOL: 0
+	sei
+;PCODE: $00000071 VOL: 0
+; 0000 007C     while (1){
+;PCODE: $00000072 VOL: 0
+; 0000 007D         setpoint = (float)read_adc(0);
+;PCODE: $00000073 VOL: 0
+;PCODE: $00000074 VOL: 0
+;PCODE: $00000075 VOL: 0
+;PCODE: $00000076 VOL: 0
+; 0000 007E     }
+;PCODE: $00000077 VOL: 0
+;PCODE: $00000078 VOL: 0
+; 0000 007F }
+;PCODE: $00000079 VOL: 0
+;PCODE: $0000007A VOL: 0
+;PCODE: $0000007B VOL: 0
+;void UART_Init() {
+; 0000 0080 void UART_Init() {
+;PCODE: $0000007C VOL: 0
+;PCODE: $0000007D VOL: 0
+; 0000 0081 
+; 0000 0082     UBRR0H = 0;
+;PCODE: $0000007E VOL: 0
+;PCODE: $0000007F VOL: 0
+; 0000 0083     UBRR0L = 8;
+;PCODE: $00000080 VOL: 0
+;PCODE: $00000081 VOL: 0
+; 0000 0084     UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+;PCODE: $00000082 VOL: 0
+;PCODE: $00000083 VOL: 0
+; 0000 0085     UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+;PCODE: $00000084 VOL: 0
+;PCODE: $00000085 VOL: 0
+; 0000 0086 }
+;PCODE: $00000086 VOL: 0
+;PCODE: $00000087 VOL: 0
+;void UART_putchar(char data){
+; 0000 0087 void UART_putchar(char data){
+;PCODE: $00000088 VOL: 0
+;PCODE: $00000089 VOL: 0
+; 0000 0088     while(!(UCSR0A & (1<<UDRE0)));
+;PCODE: $0000008A VOL: 0
+;	data -> Y+0
+;PCODE: $0000008B VOL: 0
+;PCODE: $0000008C VOL: 0
+;PCODE: $0000008D VOL: 0
+;PCODE: $0000008E VOL: 0
+;PCODE: $0000008F VOL: 0
+;PCODE: $00000090 VOL: 0
+; 0000 0089     UDR0 = data;
+;PCODE: $00000091 VOL: 0
+;PCODE: $00000092 VOL: 0
+; 0000 008A }
+;PCODE: $00000093 VOL: 0
+;PCODE: $00000094 VOL: 0
+;PCODE: $00000095 VOL: 0
+;void data_write(char* data, unsigned int size ){
+; 0000 008B void data_write(char* data, unsigned int size ){
+;PCODE: $00000096 VOL: 0
+;PCODE: $00000097 VOL: 0
+; 0000 008C     int i =0;
+; 0000 008D     for (i = 0; i < size; i++ )
+;PCODE: $00000098 VOL: 0
+;PCODE: $00000099 VOL: 0
+;PCODE: $0000009A VOL: 0
+;	*data -> Y+4
+;	size -> Y+2
+;	i -> R16,R17
+;PCODE: $0000009B VOL: 0
+;PCODE: $0000009C VOL: 0
+;PCODE: $0000009D VOL: 0
+;PCODE: $0000009E VOL: 0
+;PCODE: $0000009F VOL: 0
+;PCODE: $000000A0 VOL: 0
+;PCODE: $000000A1 VOL: 0
+;PCODE: $000000A2 VOL: 0
+;PCODE: $000000A3 VOL: 0
+;PCODE: $000000A4 VOL: 0
+;PCODE: $000000A5 VOL: 0
+; 0000 008E     {
+; 0000 008F     UART_putchar(data[i]);
+;PCODE: $000000A6 VOL: 0
+;PCODE: $000000A7 VOL: 0
+;PCODE: $000000A8 VOL: 0
+;PCODE: $000000A9 VOL: 0
+;PCODE: $000000AA VOL: 0
+; 0000 0090     }
+;PCODE: $000000AB VOL: 0
+;PCODE: $000000AC VOL: 0
+;PCODE: $000000AD VOL: 0
+;PCODE: $000000AE VOL: 0
+;PCODE: $000000AF VOL: 0
+; 0000 0091 }
+;PCODE: $000000B0 VOL: 0
+;PCODE: $000000B1 VOL: 0
+;PCODE: $000000B2 VOL: 0
+;PCODE: $000000B3 VOL: 0
+;PCODE: $000000B4 VOL: 0
+;PCODE: $000000B5 VOL: 0
+;PCODE: $000000B6 VOL: 0
+;void PID_Calculate(){
+; 0000 0092 void PID_Calculate(){
+;PCODE: $000000B7 VOL: 0
+;PCODE: $000000B8 VOL: 0
+; 0000 0093     static float lastError = 0;
+; 0000 0094     static float pPart = 0;
+; 0000 0095     static float iPart = 0;
+; 0000 0096     static float dPart = 0;
+; 0000 0097     static long lastPulseCount = 0;
+; 0000 0098     long currentPulseCount = pulseCount;
+; 0000 0099     float pulses=currentPulseCount-lastPulseCount;
+; 0000 009A     lastPulseCount = currentPulseCount;
+;PCODE: $000000B9 VOL: 0
+;	currentPulseCount -> Y+4
+;	pulses -> Y+0
+;PCODE: $000000BA VOL: 1
+;PCODE: $000000BB VOL: 0
+;PCODE: $000000BC VOL: 0
+;PCODE: $000000BD VOL: 0
+;PCODE: $000000BE VOL: 0
+;PCODE: $000000BF VOL: 0
+;PCODE: $000000C0 VOL: 0
+;PCODE: $000000C1 VOL: 0
+;PCODE: $000000C2 VOL: 0
+; 0000 009B 
+; 0000 009C     input = (float)(pulses / pulsesPerRevolution)
+; 0000 009D      * (60.0 / sampleTime); // RPM
+;PCODE: $000000C3 VOL: 0
+;PCODE: $000000C4 VOL: 0
+;PCODE: $000000C5 VOL: 0
+;PCODE: $000000C6 VOL: 0
+;PCODE: $000000C7 VOL: 0
+;PCODE: $000000C8 VOL: 0
+; 0000 009E     error = setpoint - input;
+;PCODE: $000000C9 VOL: 0
+;PCODE: $000000CA VOL: 0
+;PCODE: $000000CB VOL: 0
+;PCODE: $000000CC VOL: 0
+; 0000 009F     pPart = Kp * error;
+;PCODE: $000000CD VOL: 0
+;PCODE: $000000CE VOL: 0
+;PCODE: $000000CF VOL: 0
+;PCODE: $000000D0 VOL: 0
+; 0000 00A0     iPart += Ki * error * sampleTime;
+;PCODE: $000000D1 VOL: 0
+;PCODE: $000000D2 VOL: 0
+;PCODE: $000000D3 VOL: 0
+;PCODE: $000000D4 VOL: 0
+;PCODE: $000000D5 VOL: 0
+;PCODE: $000000D6 VOL: 0
+;PCODE: $000000D7 VOL: 0
+;PCODE: $000000D8 VOL: 0
+; 0000 00A1     dPart = Kd * (error - lastError) / sampleTime;
+;PCODE: $000000D9 VOL: 0
+;PCODE: $000000DA VOL: 0
+;PCODE: $000000DB VOL: 0
+;PCODE: $000000DC VOL: 0
+;PCODE: $000000DD VOL: 0
+;PCODE: $000000DE VOL: 0
+;PCODE: $000000DF VOL: 0
+;PCODE: $000000E0 VOL: 0
+;PCODE: $000000E1 VOL: 0
+; 0000 00A2     output = pPart + iPart + dPart;
+;PCODE: $000000E2 VOL: 0
+;PCODE: $000000E3 VOL: 0
+;PCODE: $000000E4 VOL: 0
+;PCODE: $000000E5 VOL: 0
+;PCODE: $000000E6 VOL: 0
+;PCODE: $000000E7 VOL: 0
+; 0000 00A3     lastError = error;
+;PCODE: $000000E8 VOL: 0
+;PCODE: $000000E9 VOL: 0
+; 0000 00A4 
+; 0000 00A5     if (iPart > maxOutput) {
+;PCODE: $000000EA VOL: 0
+;PCODE: $000000EB VOL: 0
+;PCODE: $000000EC VOL: 0
+;PCODE: $000000ED VOL: 0
+; 0000 00A6         iPart = maxOutput;
+;PCODE: $000000EE VOL: 0
+;PCODE: $000000EF VOL: 0
+; 0000 00A7     }
+; 0000 00A8     else if (iPart < minOutput) {
+;PCODE: $000000F0 VOL: 0
+;PCODE: $000000F1 VOL: 0
+;PCODE: $000000F2 VOL: 0
+;PCODE: $000000F3 VOL: 0
+;PCODE: $000000F4 VOL: 0
+;PCODE: $000000F5 VOL: 0
+; 0000 00A9         iPart = minOutput;
+;PCODE: $000000F6 VOL: 0
+;PCODE: $000000F7 VOL: 0
+; 0000 00AA     }
+; 0000 00AB     //output saturation
+; 0000 00AC     if (output > maxOutput) {
+;PCODE: $000000F8 VOL: 0
+;PCODE: $000000F9 VOL: 0
+;PCODE: $000000FA VOL: 0
+;PCODE: $000000FB VOL: 0
+;PCODE: $000000FC VOL: 0
+;PCODE: $000000FD VOL: 0
+; 0000 00AD         output = maxOutput;
+;PCODE: $000000FE VOL: 0
+;PCODE: $000000FF VOL: 0
+; 0000 00AE     }
+; 0000 00AF     else if (output < minOutput) {
+;PCODE: $00000100 VOL: 0
+;PCODE: $00000101 VOL: 0
+;PCODE: $00000102 VOL: 0
+;PCODE: $00000103 VOL: 0
+;PCODE: $00000104 VOL: 0
+;PCODE: $00000105 VOL: 0
+; 0000 00B0         output = minOutput;
+;PCODE: $00000106 VOL: 0
+;PCODE: $00000107 VOL: 0
+; 0000 00B1     }
+; 0000 00B2     pwmPulse((int)output);
+;PCODE: $00000108 VOL: 0
+;PCODE: $00000109 VOL: 0
+;PCODE: $0000010A VOL: 0
+;PCODE: $0000010B VOL: 0
+;PCODE: $0000010C VOL: 0
+;PCODE: $0000010D VOL: 0
+; 0000 00B3     //pwmPulse(20);
+; 0000 00B4     input_LCD = (int)(input);
+;PCODE: $0000010E VOL: 0
+;PCODE: $0000010F VOL: 0
+;PCODE: $00000110 VOL: 0
+; 0000 00B5     err_LCD = (int)(error);
+;PCODE: $00000111 VOL: 0
+;PCODE: $00000112 VOL: 0
+;PCODE: $00000113 VOL: 0
+; 0000 00B6 }
+;PCODE: $00000114 VOL: 0
+;PCODE: $00000115 VOL: 0
+;PCODE: $00000116 VOL: 0
+;void pwmPulse(int pwm){
+; 0000 00B7 void pwmPulse(int pwm){
+;PCODE: $00000117 VOL: 0
+;PCODE: $00000118 VOL: 0
+; 0000 00B8     OCR0A = pwm;
+;PCODE: $00000119 VOL: 0
+;	pwm -> Y+0
+;PCODE: $0000011A VOL: 0
+;PCODE: $0000011B VOL: 0
+; 0000 00B9 }
+;PCODE: $0000011C VOL: 0
+;PCODE: $0000011D VOL: 0
+;PCODE: $0000011E VOL: 0
+;interrupt [EXT_INT0] void ext_int0_isr(void)
+; 0000 00BB {
+;PCODE: $0000011F VOL: 0
+;PCODE: $00000120 VOL: 0
+; 0000 00BC     pulseCount++;
+;PCODE: $00000121 VOL: 1
+;PCODE: $00000122 VOL: 0
+;PCODE: $00000123 VOL: 0
+;PCODE: $00000124 VOL: 0
+; 0000 00BD }
+;PCODE: $00000125 VOL: 0
+;PCODE: $00000126 VOL: 0
+;PCODE: $00000127 VOL: 0
+;// Timer1 overflow interrupt service routine
+;interrupt [TIM1_OVF] void timer1_ovf_isr(void)
+; 0000 00C0 {   static long counter = 0;
+;PCODE: $00000128 VOL: 0
+;PCODE: $00000129 VOL: 0
+; 0000 00C1     if (counter >= 10)
+;PCODE: $0000012A VOL: 0
+;PCODE: $0000012B VOL: 0
+;PCODE: $0000012C VOL: 0
+; 0000 00C2     {
+; 0000 00C3     PID_Calculate();
+;PCODE: $0000012D VOL: 0
+; 0000 00C4     counter = 0;
+;PCODE: $0000012E VOL: 0
+;PCODE: $0000012F VOL: 0
+; 0000 00C5     }
+; 0000 00C6     TCNT1H = 0xC1;
+;PCODE: $00000130 VOL: 0
+;PCODE: $00000131 VOL: 0
+;PCODE: $00000132 VOL: 0
+; 0000 00C7     TCNT1L = 0x80;
+;PCODE: $00000133 VOL: 0
+;PCODE: $00000134 VOL: 0
+; 0000 00C8     counter++;
+;PCODE: $00000135 VOL: 0
+;PCODE: $00000136 VOL: 0
+;PCODE: $00000137 VOL: 0
+;PCODE: $00000138 VOL: 0
+; 0000 00C9 
+; 0000 00CA }
+;PCODE: $00000139 VOL: 0
+;PCODE: $0000013A VOL: 0
+;PCODE: $0000013B VOL: 0
+;interrupt [TIM2_OVF] void timer2_ovf_isr(void)
+; 0000 00CC {
+;PCODE: $0000013C VOL: 0
+;PCODE: $0000013D VOL: 0
+; 0000 00CD     static long counter = 0;
+; 0000 00CE     if(counter >= 20){
+;PCODE: $0000013E VOL: 0
+;PCODE: $0000013F VOL: 0
+;PCODE: $00000140 VOL: 0
+; 0000 00CF         float data[4];
+; 0000 00D0         data[0] = setpoint;
+;PCODE: $00000141 VOL: 0
+;	data -> Y+0
+;PCODE: $00000142 VOL: 0
+;PCODE: $00000143 VOL: 0
+; 0000 00D1         data[1] = input;
+;PCODE: $00000144 VOL: 0
+;PCODE: $00000145 VOL: 0
+; 0000 00D2         data[2] = error;
+;PCODE: $00000146 VOL: 0
+;PCODE: $00000147 VOL: 0
+; 0000 00D3         data[3] = output;
+;PCODE: $00000148 VOL: 0
+;PCODE: $00000149 VOL: 0
+; 0000 00D4         UART_putchar(0xBB);
+;PCODE: $0000014A VOL: 0
+;PCODE: $0000014B VOL: 0
+; 0000 00D5         data_write((char*)&data, 16);
+;PCODE: $0000014C VOL: 0
+;PCODE: $0000014D VOL: 0
+;PCODE: $0000014E VOL: 0
+;PCODE: $0000014F VOL: 0
+;PCODE: $00000150 VOL: 0
+; 0000 00D6         UART_putchar(0xCC);
+;PCODE: $00000151 VOL: 0
+;PCODE: $00000152 VOL: 0
+; 0000 00D7         counter = 0;
+;PCODE: $00000153 VOL: 0
+;PCODE: $00000154 VOL: 0
+; 0000 00D8     }
+;PCODE: $00000155 VOL: 0
+; 0000 00D9     TCNT2 = 0x06;
+;PCODE: $00000156 VOL: 0
+;PCODE: $00000157 VOL: 0
+;PCODE: $00000158 VOL: 0
+; 0000 00DA     counter++;
+;PCODE: $00000159 VOL: 0
+;PCODE: $0000015A VOL: 0
+;PCODE: $0000015B VOL: 0
+;PCODE: $0000015C VOL: 0
+; 0000 00DB }
+;PCODE: $0000015D VOL: 0
+;PCODE: $0000015E VOL: 0
+;PCODE: $0000015F VOL: 0
